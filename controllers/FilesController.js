@@ -70,18 +70,23 @@ class FilesController {
     }
 
     // Mongo Condition for Id
-    if (!basicUtils.isValidId(fileId) || !basicUtils.isValidId(userId)) { return response.status(404).send({ error: 'Not found' }); }
+    if (!basicUtils.isValidId(fileId) || !basicUtils.isValidId(userId)) {
+      return response.status(404).send({ error: 'Not found' });
+    }
 
-    const result = await fileUtils.getFile({
-      _id: ObjectId(fileId),
-      userId: ObjectId(userId),
-    });
-
-    if (!result) return response.status(404).send({ error: 'Not found' });
-
-    const file = fileUtils.processFile(result);
-
-    return response.status(200).send(file);
+    try {
+      const result = await fileUtils.getFile({
+        _id: ObjectId(fileId),
+        userId: ObjectId(userId),
+      });
+      if (!result) {
+        return response.status(404).send({ error: 'Not found' });
+      }
+      const file = fileUtils.processFile(result);
+      return response.status(200).send(file);
+    } catch (err) {
+      return response.status(404).send({ error: 'Not found' });
+    }
   }
 
   static async getIndex(request, response) {
@@ -105,15 +110,22 @@ class FilesController {
     if (Number.isNaN(page)) page = 0;
 
     if (parentId !== 0 && parentId !== '0') {
-      if (!basicUtils.isValidId(parentId)) { return response.status(401).send({ error: 'Unauthorized' }); }
+      if (!basicUtils.isValidId(parentId)) {
+        return response.status(401).send({ error: 'Unauthorized' });
+      }
 
       parentId = ObjectId(parentId);
 
-      const folder = await fileUtils.getFile({
-        _id: ObjectId(parentId),
-      });
-
-      if (!folder || folder.type !== 'folder') { return response.status(200).send([]); }
+      try {
+        const folder = await fileUtils.getFile({
+          _id: ObjectId(parentId),
+        });
+        if (!folder || folder.type !== 'folder') {
+          return response.status(200).send([]);
+        }
+      } catch (err) {
+        return response.status(200).send([]);
+      }
     }
 
     const pipeline = [
