@@ -60,11 +60,14 @@ class FilesController {
 
     const { userId } = await userUtils.getUserIdAndKey(request);
 
-    const user = await userUtils.getUser({
-      _id: ObjectId(userId),
-    });
-
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    try {
+      const user = await userUtils.getUser({
+        _id: ObjectId(userId),
+      });
+      if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    } catch (err) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
 
     // Mongo Condition for Id
     if (!basicUtils.isValidId(fileId) || !basicUtils.isValidId(userId)) { return response.status(404).send({ error: 'Not found' }); }
@@ -84,11 +87,14 @@ class FilesController {
   static async getIndex(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
 
-    const user = await userUtils.getUser({
-      _id: ObjectId(userId),
-    });
-
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    try {
+      const user = await userUtils.getUser({
+        _id: ObjectId(userId),
+      });
+      if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    } catch (err) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
 
     let parentId = request.query.parentId || '0';
 
