@@ -56,74 +56,69 @@ class FilesController {
   }
 
   static async getShow(request, response) {
-    const fileId = request.params.id;
-
     const { userId } = await userUtils.getUserIdAndKey(request);
+
+    if (!basicUtils.isValidId(userId)) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
 
     const user = await userUtils.getUser({
       _id: ObjectId(userId),
     });
 
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    if (!user) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
 
-    // Mongo Condition for Id
-    if (!basicUtils.isValidId(fileId) || !basicUtils.isValidId(userId)) { return response.status(404).send({ error: 'Not found' }); }
+    const fileId = request.params.id;
+    if (!basicUtils.isValidId(fileId)) {
+      return response.status(404).send({ error: 'Not found' });
+    }
 
-    const result = await fileUtils.getFile({
+    const file = await fileUtils.getFile({
       _id: ObjectId(fileId),
       userId: ObjectId(userId),
     });
 
-    if (!result) return response.status(404).send({ error: 'Not found' });
+    if (!file) {
+      return response.status(404).send({ error: 'Not found' });
+    }
 
-    const file = fileUtils.processFile(result);
-
-    return response.status(200).send(file);
+    return response.status(200).send(fileUtils.processFile(file));
   }
 
   static async getIndex(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
 
+    if (!basicUtils.isValidId(userId)) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
+
     const user = await userUtils.getUser({
       _id: ObjectId(userId),
     });
 
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    if (!user) {
+      return response.status(401).send({ error: 'Unauthorized' });
+    }
 
     let parentId = request.query.parentId || '0';
-
     if (parentId === '0') parentId = 0;
 
     let page = Number(request.query.page) || 0;
-
     if (Number.isNaN(page)) page = 0;
 
-    if (parentId !== 0 && parentId !== '0') {
-      if (!basicUtils.isValidId(parentId)) { return response.status(401).send({ error: 'Unauthorized' }); }
-
-      parentId = ObjectId(parentId);
-
-      const folder = await fileUtils.getFile({
-        _id: ObjectId(parentId),
-      });
-
-      if (!folder || folder.type !== 'folder') { return response.status(200).send([]); }
-    }
-
     const pipeline = [
-      { $match: { parentId } },
+      { $match: { parentId: parentId === 0 ? 0 : ObjectId(parentId), userId: ObjectId(userId) } },
       { $skip: page * 20 },
-      {
-        $limit: 20,
-      },
+      { $limit: 20 }
     ];
 
     const fileCursor = await fileUtils.getFilesOfParentId(pipeline);
 
     const fileList = [];
     await fileCursor.forEach((doc) => {
-      const document = fileUtils.processFile(doc);
-      fileList.push(document);
+      fileList.push(fileUtils.processFile(doc));
     });
 
     return response.status(200).send(fileList);
