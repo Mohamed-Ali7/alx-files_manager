@@ -1,4 +1,6 @@
 import { ObjectId } from 'mongodb';
+import { ObjectID } from 'mongodb';
+import dbClient from '../utils/db';
 import mime from 'mime-types';
 import Queue from 'bull';
 import userUtils from '../utils/user';
